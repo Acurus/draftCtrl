@@ -2,6 +2,17 @@
 
 #include <arduino.h>
 
+// Callback type for MQTT message received
+typedef void (*MessageCallback)(const char* topic, const char* message);
+
+// Maximum number of subscriptions
+#define MAX_SUBSCRIPTIONS 4
+
+struct Subscription {
+  const char* topic;
+  MessageCallback callback;
+};
+
 class MQTTManager
 {
 public:
@@ -16,6 +27,9 @@ public:
   
   // Reconnect if disconnected
   void ensureConnected();
+  
+  // Subscribe to a topic with a callback
+  void subscribe(const char* topic, MessageCallback callback);
   
   // Publish a floating point value to a topic
   void publishFloat(const char* topic, float value);
@@ -37,4 +51,8 @@ private:
   int port;
   const char* username;
   const char* password;
+  Subscription subscriptions[MAX_SUBSCRIPTIONS];
+  int subscriptionCount;
 };
+
+

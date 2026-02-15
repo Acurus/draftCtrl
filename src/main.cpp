@@ -15,6 +15,37 @@ MQTTManager mqtt(MQTT_BROKER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD);
 unsigned long lastTemperatureCheck = 0;
 unsigned long lastPIDUpdate = 0;
 
+// Sensor variables
+float houseTemperature = 0.0;
+
+// Callback for handling target temperature updates
+void onTargetTemperatureReceived(const char* topic, const char* message)
+{
+  float newTarget = atof(message);
+  
+  if (newTarget > 50 && newTarget < 500) // Sanity check for reasonable temps
+  {
+    pidController.setTarget(newTarget);
+    Serial.print("Target temperature updated to: ");
+    Serial.print(newTarget);
+    Serial.println("°C");
+  }
+  else
+  {
+    Serial.print("Invalid target temperature received: ");
+    Serial.println(message);
+  }
+}
+
+// Callback for handling house temperature updates
+void onHouseTemperatureReceived(const char* topic, const char* message)
+{
+  houseTemperature = atof(message);
+  Serial.print("House temperature received: ");
+  Serial.print(houseTemperature);
+  Serial.println("°C");
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -37,9 +68,16 @@ void setup()
   pidController.setOutputLimits(-100, 100);
   
   // Initialize connectivity
-  // Serial.println("Initializing WiFi and MQTT...");
-  // mqtt.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
-  // mqtt.connectMQTT();
+  Serial.println("Initializing WiFi and MQTT...");
+  mqtt.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
+  mqtt.connectMQTT();
+  
+  // Subscribe to control topics
+  if (mqtt.isConnected())
+  {
+    mqtt.subscribe(MQTT_TOPIC_SET_TARGET, onTargetTemperatureReceived);
+    mqtt.subscribe(MQTT_TOPIC_HOUSE_TEMP, onHouseTemperatureReceived);
+  }
   
   Serial.println("Setup complete!");
   Serial.println();
@@ -50,8 +88,8 @@ void loop()
   unsigned long currentMillis = millis();
   
   // Ensure MQTT connection is alive
-  // mqtt.ensureConnected();
-  // mqtt.poll();
+  mqtt.ensureConnected();
+  mqtt.poll();
   
   // Read temperature periodically
   if (currentMillis - lastTemperatureCheck >= MEASUREMENT_INTERVAL)
@@ -63,12 +101,12 @@ void loop()
     
     if (!isnan(temperature))
     {
-      Serial.print("Temperature: ");
+      Serial.print("Chimney Temperature: ");
       Serial.print(temperature);
       Serial.println("°C");
       
       // Publish temperature to MQTT
-      //mqtt.publishFloat(MQTT_TOPIC_TEMPERATURE, temperature);
+      mqtt.publishFloat(MQTT_TOPIC_TEMPERATURE, temperature);
       
       // Update PID with new temperature reading
       float pidOutput = pidController.calculate(temperature);
@@ -81,7 +119,15 @@ void loop()
       
       // Update servo based on PID output
       servoController.setFromPIDOutput(pidOutput);
-      //mqtt.publishInt(MQTT_TOPIC_SERVO, servoController.getCurrentAngle());
+      mqtt.publishInt(MQTT_TOPIC_SERVO, servoController.getCurrentAngle());
+      
+      // Log house temperature if available
+      if (houseTemperature > 0)
+      {
+        Serial.print("House Temperature: ");
+        Serial.print(houseTemperature);
+        Serial.println("°C");
+      }
     }
     else
     {
@@ -89,7 +135,7 @@ void loop()
     }
     
     // Publish target temperature for reference
-    //mqtt.publishFloat(MQTT_TOPIC_TARGET, pidController.getTarget());
+    mqtt.publishFloat(MQTT_TOPIC_TARGET, pidController.getTarget());
   }
   
   // Optional: Add a small delay to prevent overwhelming the loop

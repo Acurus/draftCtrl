@@ -8,7 +8,8 @@ static MqttClient mqttClient(wifiClient);
 
 MQTTManager::MQTTManager(const char* broker, int port,
                          const char* username, const char* password)
-    : broker(broker), port(port), username(username), password(password)
+    : broker(broker), port(port), username(username), password(password),
+      subscriptionCount(0)
 {
 }
 
@@ -131,4 +132,56 @@ bool MQTTManager::isConnected() const
 void MQTTManager::poll()
 {
   mqttClient.poll();
+  
+  // Handle incoming messages
+  if (subscriptionCount > 0 && mqttClient.connected())
+  {
+    int messageSize = mqttClient.parseMessage();
+    if (messageSize > 0)
+    {
+      // Get the topic and message content
+      String topic = mqttClient.messageTopic();
+      String message = "";
+      
+      while (mqttClient.available())
+      {
+        message += (char)mqttClient.read();
+      }
+      
+      // Find matching subscription and call callback
+      for (int i = 0; i < subscriptionCount; i++)
+      {
+        if (subscriptions[i].callback && topic == subscriptions[i].topic)
+        {
+          subscriptions[i].callback(topic.c_str(), message.c_str());
+          break;
+        }
+      }
+    }
+  }
+}
+
+void MQTTManager::subscribe(const char* topic, MessageCallback callback)
+{
+  if (!mqttClient.connected())
+  {
+    Serial.println("Cannot subscribe - not connected to MQTT broker");
+    return;
+  }
+  
+  if (subscriptionCount >= MAX_SUBSCRIPTIONS)
+  {
+    Serial.print("Cannot subscribe - maximum subscriptions (");
+    Serial.print(MAX_SUBSCRIPTIONS);
+    Serial.println(") reached");
+    return;
+  }
+  
+  subscriptions[subscriptionCount].topic = topic;
+  subscriptions[subscriptionCount].callback = callback;
+  subscriptionCount++;
+  
+  mqttClient.subscribe(topic);
+  Serial.print("Subscribed to topic: ");
+  Serial.println(topic);
 }
