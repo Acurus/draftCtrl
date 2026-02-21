@@ -5,7 +5,7 @@
 class LinearActuatorController
 {
 public:
-  LinearActuatorController(int dirPin, int stepPin);
+  LinearActuatorController(int dirPin, int stepPin, int maxRange);
 
   // Initialize the stepper motor
   void begin();
@@ -18,6 +18,7 @@ public:
 private:
   int dirPin;
   int stepPin;
+  int maxRange;
   int currentPosition;
 
   void set_direction(char direction);

@@ -8,7 +8,7 @@
 // Create module instances
 TemperatureSensor tempSensor(TEMPERATURE_SELECT_PIN);
 PIDController pidController(PID_KP, PID_KI, PID_KD);
-LinearActuatorController LinearActuatorController(STEPPER_DIR_PIN, STEPPER_STEP_PIN);
+LinearActuatorController linearActuator(STEPPER_DIR_PIN, STEPPER_STEP_PIN, STEPPER_MAX_RANGE);
 MQTTManager mqtt(MQTT_BROKER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD);
 
 // Timing variables
@@ -57,6 +57,10 @@ void setup()
   // Initialize temperature sensor
   Serial.println("Initializing temperature sensor...");
   tempSensor.begin();
+
+  // Initialize linear actuator
+  Serial.println("Initializing linear actuator...");
+  linearActuator.begin();
   
   // Initialize PID controller
   Serial.println("Initializing PID controller...");
@@ -114,8 +118,8 @@ void loop()
       Serial.println("°C");
       
       // Update servo based on PID output
-      LinearActuatorController.setFromPIDOutput(pidOutput);
-      mqtt.publishInt(MQTT_TOPIC_SERVO, LinearActuatorController.getCurrentPosition());
+      linearActuator.setFromPIDOutput(pidOutput);
+      mqtt.publishInt(MQTT_TOPIC_SERVO, linearActuator.getCurrentPosition());
       
       // Log house temperature if available
       if (houseTemperature > 0)
