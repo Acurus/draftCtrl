@@ -1,0 +1,24 @@
+#pragma once
+
+#include <Arduino.h>
+
+class LinearActuatorController
+{
+public:
+  LinearActuatorController(int dirPin, int stepPin);
+
+  // Initialize the stepper motor
+  void begin();
+
+  // move the linear actuator. a direction ('l', 'r'), for a distance in millimeter, aa a speed in mm/second
+  void setFromPIDOutput(float pidOutput);
+
+  uint8_t getCurrentPosition() const { return currentPosition; }
+
+private:
+  int dirPin;
+  int stepPin;
+  int currentPosition;
+
+  void set_direction(char direction);
+  void move(char direction, int mm, int mm_per_sec);};

@@ -2,13 +2,13 @@
 #include "config.h"
 #include "sensors/temperature.h"
 #include "control/pid_controller.h"
-#include "control/servo_controller.h"
+#include "control/linear_actuator_controller.h"
 #include "connectivity/mqtt.h"
 
 // Create module instances
 TemperatureSensor tempSensor(TEMPERATURE_SELECT_PIN);
 PIDController pidController(PID_KP, PID_KI, PID_KD);
-ServoController servoController(SERVO_PIN, MIN_SERVO_ANGLE, MAX_SERVO_ANGLE);
+LinearActuatorController LinearActuatorController(STEPPER_DIR_PIN, STEPPER_STEP_PIN);
 MQTTManager mqtt(MQTT_BROKER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD);
 
 // Timing variables
@@ -57,10 +57,6 @@ void setup()
   // Initialize temperature sensor
   Serial.println("Initializing temperature sensor...");
   tempSensor.begin();
-  
-  // Initialize servo
-  Serial.println("Initializing servo controller...");
-  servoController.begin();
   
   // Initialize PID controller
   Serial.println("Initializing PID controller...");
@@ -118,8 +114,8 @@ void loop()
       Serial.println("°C");
       
       // Update servo based on PID output
-      servoController.setFromPIDOutput(pidOutput);
-      mqtt.publishInt(MQTT_TOPIC_SERVO, servoController.getCurrentAngle());
+      LinearActuatorController.setFromPIDOutput(pidOutput);
+      mqtt.publishInt(MQTT_TOPIC_SERVO, LinearActuatorController.getCurrentPosition());
       
       // Log house temperature if available
       if (houseTemperature > 0)
