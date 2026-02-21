@@ -13,7 +13,7 @@ public:
   // move the linear actuator. a direction ('l', 'r'), for a distance in millimeter, aa a speed in mm/second
   void setFromPIDOutput(float pidOutput);
 
-  uint8_t getCurrentPosition() const { return currentPosition; }
+  int getCurrentPosition();
 
 private:
   int dirPin;

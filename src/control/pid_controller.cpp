@@ -34,6 +34,11 @@ float PIDController::calculate(float currentValue)
   integralSum += error * dt;
   // Limit integral to prevent windup
   integralSum = constrain(integralSum, minOutput / ki, maxOutput / ki);
+  
+  // Reset integral if error is zero or very small to prevent output drift
+  if (error == 0)
+    integralSum = 0;
+  
   float iTerm = ki * integralSum;
   
   // Derivative term

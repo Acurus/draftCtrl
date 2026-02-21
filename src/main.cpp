@@ -119,8 +119,13 @@ void loop()
       
       // Update servo based on PID output
       linearActuator.setFromPIDOutput(pidOutput);
-      mqtt.publishInt(MQTT_TOPIC_SERVO, linearActuator.getCurrentPosition());
       
+      mqtt.publishInt(MQTT_TOPIC_LINEAR_ACTUATOR, linearActuator.getCurrentPosition());
+      Serial.print("linearActuator.getCurrentPosition(): ");
+      Serial.println(linearActuator.getCurrentPosition());
+
+      // Publish target temperature for reference
+      mqtt.publishFloat(MQTT_TOPIC_TARGET, pidOutput);
       // Log house temperature if available
       if (houseTemperature > 0)
       {
@@ -134,8 +139,7 @@ void loop()
       Serial.println("ERROR: Failed to read temperature");
     }
     
-    // Publish target temperature for reference
-    mqtt.publishFloat(MQTT_TOPIC_TARGET, pidController.getTarget());
+
   }
   
   // Optional: Add a small delay to prevent overwhelming the loop

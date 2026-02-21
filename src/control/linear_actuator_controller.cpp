@@ -16,7 +16,7 @@ void LinearActuatorController::begin()
 
 void LinearActuatorController::setFromPIDOutput(float pidOutput)
 {
-  int target_position = 30 * (pidOutput/100);
+  int target_position = maxRange * (pidOutput/100);
   Serial.print("Target position: ");
   Serial.println(target_position);
 
@@ -37,6 +37,11 @@ void LinearActuatorController::setFromPIDOutput(float pidOutput)
     move('r', diff_position, 20);
   }
   currentPosition = target_position;
+}
+
+int LinearActuatorController::getCurrentPosition()
+{
+  return currentPosition;
 }
 
 void LinearActuatorController::move(char direction, int mm, int mm_per_sec = 10)
