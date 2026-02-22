@@ -1,6 +1,6 @@
 #pragma once
 
-#include <arduino.h>
+#include <Arduino.h>
 
 // Callback type for MQTT message received
 typedef void (*MessageCallback)(const char* topic, const char* message);
